@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <script src="http://cdn.alloyui.com/3.0.1/aui/aui-min.js"></script>
+    <link href="http://cdn.alloyui.com/3.0.1/aui-css/css/bootstrap.min.css" rel="stylesheet"></link>
+</head>
+
+<body class="yui3-skin-sam">
+
+<h1>Alloy - DataTable - Inline Cell Editing</h1>
+
+<div class="example">
+    <button id="addRow">Add row</button>
+    <div id="container"></div>
+</div>
+
+<script type="text/javascript">
+
+    AUI().use('aui-datatable', function(A) {
+
+        var data = [{
+            "lastName": " Last Name",
+            "studentId": " institution Student ID",
+            "emailAddress": " Email Address",
+            "firstName": "First Name"
+        }, {
+            "lastName": "Sandstrom1",
+            "studentId": "1",
+            "emailAddress": "jeremys+test1@instructure.com",
+            "firstName": "Jeremy"
+        }, {
+            "lastName": "Sandstrom2",
+            "studentId": "2",
+            "emailAddress": "jeremys+test2@instructure.com",
+            "firstName": "Jeremy"
+        }, {
+            "lastName": "Sandstrom49",
+            "studentId": "49",
+            "emailAddress": "jeremys+test49@instructure.com",
+            "firstName": "Jeremy"
+        }];
+
+        var dtable = new A.DataTable.Base({
+            columnset: ['lastName', 'studentId', 'emailAddress', 'firstName'],
+            recordset: data
+        })
+                .render("#container");
+
+        A.one('#addRow').on('click', function() {
+            data.push({
+                "lastName": "New row",
+                "studentId": "00",
+                "emailAddress": "new@instructure.com",
+                "firstName": "New"
+            });
+
+            dtable.set('recordset', data);
+        });
+
+    });
+
+</script>
+
+</body>
+</html>

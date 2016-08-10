@@ -1,0 +1,77 @@
+<html>
+<head>
+    <title>Alloy</title>
+    <script src="js/aui-min.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet"></link>
+    <script>
+        YUI().use(
+                'aui-io-request',
+                'aui-datatable',
+
+                function (Y) {
+                    var columns = ['id','name', 'address', 'email', 'phone'];
+
+                    Y.io.request(
+                            'http://54.165.209.100:4300/customers',
+                            {
+                                on: {
+                                    success: function() {
+                                        var data = this.get('responseData');
+                                        var parsed = JSON.parse(data);
+                                        //console.log(data.data[0].id);
+
+                                        new Y.DataTable.Base(
+                                                {
+                                                    columnset: columns,
+                                                    recordset: parsed
+                                                }
+                                        ).render('#myDataTable');
+                                    }
+                                }
+                            }
+                    );
+                }
+        );
+
+    </script>
+    <script>
+        YUI().use(
+                'aui-form-builder',
+                function(Y) {
+                    new Y.FormBuilder(
+                            {
+
+                                boundingBox: '#myFormBuilder',
+                                fields: [
+                                    {
+                                        iconClass: 'form-builder-field-icon-textarea',
+                                        label: 'id',
+                                        type: 'textarea'
+                                    },
+                                    {
+                                        iconClass: 'form-builder-field-icon-textarea',
+                                        label: 'name',
+                                        type: 'textarea'
+                                    },
+                                    {
+                                        iconClass: 'form-builder-field-icon-textarea',
+                                        label: 'adress',
+                                        type: 'textarea'
+                                    },
+                                    {
+                                        iconClass: 'form-builder-field-icon-textarea',
+                                        label: 'phone',
+                                        type: 'textarea'
+                                    }
+                                ]
+                            }
+                    ).render();
+                }
+        );
+    </script>
+
+</head>
+<body>
+<div id="myDataTable"></div></body><br><br>
+<div id="myFormBuilder"></div>
+</html>

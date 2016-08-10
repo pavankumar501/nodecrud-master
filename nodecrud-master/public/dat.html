@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>AlloyUI - Registration Form</title>
+
+	<!--
+	1 - Copy and paste
+	First load the seed and CSS files.
+	-->
+	<script src="http://cdn.alloyui.com/2.0.0/aui/aui-min.js"></script>
+	<link href="http://cdn.alloyui.com/2.0.0/aui-css/css/bootstrap.min.css" rel="stylesheet"></link>
+	<style>
+	fieldset {
+		margin: 2em 0;
+	}
+	</style>
+
+</head>
+<body class="yui3-skin-sam">
+
+	<h1>AlloyUI - Registration Form</h1>
+
+	<div id="progressBar"></div>
+
+	<div id="pagination" class="pagination">
+		<ul class="pagination-content">
+			<li><a>Prev</a></li>
+			<li><a>1</a></li>
+			<li><a>2</a></li>
+			<li><a>Next</a></li>
+		</ul>
+	</div>
+
+	<div class="page">
+		<form class="form" id="form1" onSubmit="event.preventDefault();">
+			<fieldset>
+				<label class="control-label" for="name">Name:</label>
+				<input id="name" name="name" placeholder="Joe Bloggs" type="text" />
+
+				<label class="control-label" for="email">Email:</label>
+				<input id="email" name="email" placeholder="test@liferay.com" type="text" />
+
+				<label class="control-label" for="date">Birthday:</label>
+				<input id="date" name="date" placeholder="mm/dd/yyyy" type="text" />
+			</fieldset>
+		</form>
+	</div>
+
+	<div class="hide page">
+		<form class="form" id="form2" onSubmit="event.preventDefault();">
+			<fieldset>
+				<label class="control-label" for="charInput">Write a description about yourself <em>(Must be less than 160 characters)</em>:</label>
+				<textarea name="charInput" id="charInput"></textarea>
+				<br />
+				<span id="counter"></span> characters remaining.
+			</fieldset>
+
+			<fieldset>
+				<p>
+					Crop your headshot.
+				</p>
+
+				<div id="imageCropper">
+					<img id="image" src="http://alloyui.com/image-cropper/img/crop-image.jpg" />
+				</div>
+			</fieldset>
+
+			<fieldset>
+				<button class="btn" id="submitBtn">Submit</button>
+				<button class="btn" id="resetBtn">Reset</button>
+			</fieldset>
+
+			<fieldset class="hide" id="output">
+				<legend class="fieldset-legend">
+					<span class="legend">
+						Output
+					</span>
+				</legend>
+
+				<div id="message"></div>
+			</fieldset>
+		</form>
+	</div>
+
+	<!--
+	2 - Start using AlloyUI
+	Then initialize AlloyUI and load a module.
+	-->
+	<script>
+	YUI().use(
+		'aui-button',
+		'aui-char-counter',
+		'aui-datepicker',
+		'aui-form-validator',
+		'aui-image-cropper',
+		'aui-pagination',
+		'aui-progressbar',
+		function(Y) {
+
+			// Create formValidator variable
+
+			var formValidator = [];
+
+			// Update progress bar
+
+			var updateProgress = function() {
+				var validForms = 0;
+
+				for (var i = 0; i < formValidator.length; i++) {
+					formValidator[i].validate();
+
+					if (!formValidator[i].hasErrors()) {
+						validForms++;
+					}
+				}
+
+				var ratio = Math.round(validForms/formValidator.length * 100);
+
+				progressBar.set('value', ratio);
+			};
+
+			// Create progress bar
+
+			var progressBar = new Y.ProgressBar(
+				{
+					boundingBox: '#progressBar',
+					label: '0%',
+					on: {
+						complete: function(event) {
+							this.set('label', 'Complete!');
+						},
+						valueChange: function(event) {
+							this.set('label', event.newVal + '%');
+						}
+					},
+					value: 0,
+					width: 700
+				}
+			).render();
+
+			// Grab pages
+
+			var pages = Y.all('.page');
+
+			// Create paginator
+
+			new Y.Pagination(
+				{
+					after: {
+						changeRequest: function(event) {
+							if (event.state.page === 2 && !imgCropper.rendered) {
+								imgCropper.render();
+
+								imgCropper.rendered = true;
+							}
+						}
+					},
+					boundingBox: '#pagination',
+					circular: false,
+					contentBox: '#pagination .pagination-content',
+					on: {
+						changeRequest: function(event) {
+							var lastState = event.lastState,
+								state = event.state;
+
+							if (lastState) {
+								pages.item(lastState.page - 1).hide();
+
+								updateProgress();
+							}
+
+							pages.item(state.page - 1).show();
+						}
+					},
+					page: 1
+				}
+			).render();
+
+			// Initialize form validator and fields
+
+			formValidator[0] = new Y.FormValidator(
+				{
+					boundingBox: '#form1',
+					rules: {
+						email: {
+							email: true,
+							required: true
+						},
+						name: {
+							alpha: true,
+							required: true
+						}
+					}
+				}
+			);
+
+			formValidator[1] = new Y.FormValidator(
+				{
+					boundingBox: '#form2',
+					rules: {
+						charInput: {
+							rangeLength: [1, 160],
+							required: true
+						}
+					}
+				}
+			);
+
+			// Initialize datepicker
+
+			new Y.DatePicker(
+				{
+					popover: {
+						zIndex: 1
+					},
+					trigger: '#date'
+				}
+			);
+
+			// Initialize char counter
+
+			new Y.CharCounter(
+				{
+					counter: '#counter',
+					input: '#charInput',
+					maxLength: 160
+				}
+			);
+
+			// Initialize image cropper
+
+			var imgCropper = new Y.ImageCropper(
+				{
+					srcNode: '#image'
+				}
+			);
+
+			// Initialize AUI button
+
+			new Y.Button(
+				{
+					on: {
+						click: function() {
+							updateProgress();
+
+							var validForms = 0;
+
+							var formValidatorLength = formValidator.length;
+
+							for (var i = 0; i < formValidatorLength; i++) {
+								if (!formValidator[i].hasErrors()) {
+									validForms++;
+								}
+							}
+
+							if (validForms != formValidatorLength) {
+								validForms = 0;
+							}
+
+							generateOutput(validForms);
+						}
+					},
+					srcNode: '#submitBtn'
+				}
+			).render();
+
+			// Initialize AUI button
+
+			new Y.Button(
+				{
+					on: {
+						click: function() {
+							location.reload();
+						}
+					},
+					srcNode: '#resetBtn'
+				}
+			).render();
+
+			// Grab output element
+
+			var output = Y.one('#output');
+
+			// Create generated output
+
+			var generateOutput = function(valid) {
+				var messageNode = Y.one('#message');
+				var outputNode = Y.one('#output');
+
+				var cssClass = valid ? "text-success" : "text-error";
+				var messageString = valid ? "All forms are complete!" : "Please fill out the entire form!";
+
+				var message = Y.Node.create("<div class='" + cssClass + "'>" + messageString + "</div>");
+
+				messageNode.setHTML(message);
+
+				outputNode.show();
+			};
+		}
+	);
+	</script>
+
+</body>
+</html>

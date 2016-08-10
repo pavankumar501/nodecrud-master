@@ -1,0 +1,221 @@
+<html>
+<head>
+    <title>Alloy</title>
+    <script src="js/aui-min.js"></script>
+    <script src="js/all.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet"></link>
+    <!--<script src="http://code.jquery.com/jquery-1.6.2.min.js"></script>-->
+    <script>
+      YUI().use(
+        'aui-io-request',
+        'aui-datatable',
+        'datatable-sort',
+        'json-stringify',
+        'aui-form-validator',
+        'datatable-scroll',
+        'aui-datatable-core',
+        'aui-datatable-edit',
+        'aui-button',
+
+  function (Y) {
+      var columns = [
+          {
+              key: 'id',
+              //editor: new Y.TextAreaCellEditor(),
+              sortable: true
+          },
+          {
+              key: 'name',
+              editor: new Y.TextAreaCellEditor(),
+              sortable: true
+          },
+          {
+              key: 'address',
+              editor: new Y.TextAreaCellEditor(),
+              sortable: true
+          },
+          {
+              key: 'email',
+              editor: new Y.TextAreaCellEditor(),
+              sortable: true
+          },
+          {
+              key: 'phone',
+              editor: new Y.TextAreaCellEditor(),
+              sortable: true
+          },
+          {   key:        'delete',
+              defaultChecked: true,
+              allowHTML:  true, // to avoid HTML escaping
+              label:      'Action',
+              formatter: ' <form action = "/customers/delete" method = "post"> <input type="submit" name="upvote" value="delete" /> </form>',
+              emptyCellValue: '<form action = "/customers/delete" method = "post"> <input type="submit" name="upvote" value="delete" /> </form>'
+          }
+      ];
+
+
+    Y.io.request(
+      'http://localhost:4300/customers',
+      {
+        on: {
+          success: function() {
+            var data = this.get('responseData');
+            var parsed = JSON.parse(data);
+            //console.log(data.data[0].id);
+
+              recordset = new Y.DataTable(
+      {
+        columnset: columns,
+        recordset: parsed,
+          scrollable: 'y'
+      }
+
+
+    ).render('#myDataTable');
+              selectRow : function(o) {
+                  this.unselectRows();
+
+                  if (typeof o == OBJECT) {
+                      var tr = o.currentTarget;
+                      tr.all('td').addClass('yui3-datatable-selected');
+                      console.log("Row selected");
+
+                      // do something with the row data
+                      var id = tr.get("id");
+                      var records = this.dt.get("recordset");
+                      var selectedRecord = records.getRecord( id );
+
+                      //this.onRowSelected(selectedRecord);
+                  } else if (typeof o == NUMBER && o != -1) {
+                      // index of row to select
+                      var c = this.dt.get('contentBox');
+                      // datatable has _two_ tbody tags...
+                      var tbody = c.one('tbody').next();
+                      var trs = tbody.all('tr');
+                      var nodes = trs.get('nodes');
+                      var tr = nodes[o];
+
+                      if (!tr) {return;}
+
+                      tr.all('td').addClass('yui3-datatable-selected');
+                      console.log("Row selected");
+                  }
+              }
+
+              unselectRows : function () {
+                  console.log("Unselecting all rows");
+
+                  var c = this.dt.get('contentBox');
+                  c.all('td.yui3-datatable-selected').removeClass('yui3-datatable-selected');
+              }
+
+
+              new Y.FormValidator(
+                      {
+                          boundingBox: '#myForm'
+                      })
+
+
+          }
+        }
+      }
+    )
+  }
+    );
+    </script>
+   <!-- <script>
+        $.ajax({
+            type: "POST",
+            url: 'http://localhost:4300/customers/delete',
+            data: data,
+            success: success,
+            dataType: dataType
+        });
+
+    </script>-->
+   <!-- <script type="text/javascript">
+        $(function(){
+            $('#select_link').click(function(e){
+                e.preventDefault();
+                console.log('select_link clicked');
+
+                /*$.ajax({
+                 dataType: 'jsonp',
+                 data: "data=yeah",
+                 jsonp: 'callback',
+                 url: 'http://54.165.209.100:4300/customers',
+                 success: function(data) {
+                 console.log('success');
+                 console.log(JSON.stringify(data));
+                 }
+                 });*/
+                var data = {};
+                data.title = "title";
+                data.message = "message";
+
+                $.ajax({
+                    type: 'GET',
+                    data: JSON.stringify(data),
+                    contentType: 'application/json',
+                    url: 'http://localhost:4300/customers/add',
+                    success: function(data) {
+                        console.log('success');
+                        console.log(JSON.stringify(data));
+                    }
+                });
+                /*$.ajax('http://54.165.209.100:4300/customers', {
+                 type: 'GET',
+                 data: JSON.stringify(data),
+                 contentType: 'application/json',
+                 success: function() { console.log('success');},
+                 error  : function() { console.log('error');}
+                 });*/
+            });
+        });
+    </script>
+-->
+</head>
+<body>
+<div class="container">
+    <h2>Panels</h2>
+    <div class="panel-group">
+        <div class="panel panel-default">
+            <div class="panel-heading">Alloy UI Datatable</div>
+            <div class="panel-body" style="max-height: 660;overflow-y: scroll;">
+                <div class="page-data">
+                    <div class="data-btn">
+                        <button onClick="addUser();">+ Add</button>
+                    </div>
+                <div id="myDataTable"></div>
+
+               <!-- <form id="myForm" method="post" action="/customers/add">
+                    <p>
+                        <label class="aui-field-label" for="name">Name:</label>
+                        <input class="aui-field-required" type="text" name="name" />
+                    </p>
+                    <p>
+                        <label class="aui-field-label" for="address">address:</label>
+                        <input class="aui-field-required" type="text" name="address" />
+                    </p>
+                    <p>
+                        <label class="aui-field-label" for="email">Email:</label>
+                        <input class="aui-field-required aui-field-email" type="text" name="email" />
+                    </p>
+                    <p>
+                        <label class="aui-field-label" for="phone">PhoneNo:</label>
+                        <input class="aui-field-required aui-field-digits" type="text" name="phone" />
+                    </p>
+                    <p>
+                        <input class="aui-button-input" type="submit" value="Submit" />
+                        <input class="aui-button-input" type="reset" value="Reset" />
+                    </p>
+                </form>
+-->
+            </div>
+
+
+        </div>
+        </div>
+
+</body>
+</html>

@@ -1,0 +1,347 @@
+<html>
+<head>
+    <title>Alloy</title>
+    <script src="js/aui-min.js"></script>
+    <script src="js/all.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet"></link>
+    <script src="http://code.jquery.com/jquery-1.6.2.min.js"></script>
+    <!--<script src="http://yui.yahooapis.com/3.2.0/build/yui/yui-min.js"></script>-->
+    <script>
+        YUI().use(
+                'aui-io-request',
+                'aui-datatable',
+                'datatable-sort',
+                'json-stringify',
+                'aui-form-validator',
+                'datatable-scroll',
+                'aui-datatable-core',
+                'aui-datatable-edit',
+                'aui-button',
+                'aui-node',
+
+                function (Y) {
+                    var columns = [
+                        {key:'id', /*label:"<input type='checkbox' id='SelectAll'> Select All",*/
+                           formatter:"<input type='hidden' id='' value =key:'id'>",
+                        },
+                        {
+                            key: 'name',
+                            editor: new Y.TextAreaCellEditor(),
+                            sortable: true
+
+                        },
+                        {
+                            key: 'address',
+                            editor: new Y.TextAreaCellEditor(),
+                            sortable: true
+                        },
+                        {
+                            key: 'email',
+                            editor: new Y.TextAreaCellEditor(),
+                            sortable: true
+                        },
+                        {
+                            key: 'phone',
+                            editor: new Y.TextAreaCellEditor(),
+                            sortable: true
+                        },
+                        {
+                            key: 'delete',
+                            /*editor: new Y.TextAreaCellEditor(),*/
+                            defaultChecked: true,
+                            allowHTML: true, // to avoid HTML escaping
+                            label: 'Action',
+                            formatter: ' <!--<form action = "/customers/edit/:id:" method = "post"> <input type="submit" name="upvote" value="edit" /> </form>,--><form id="remove" name= "delete" action = "/customers/delete/50" method = "post"> <input type="submit" value="delete" /> </form>',
+                            emptyCellValue: '<!--<form action = "/customers/edit/:id:" method = "post"> <input type="submit" name="upvote" value="edit" /> </form>,--><!--<form action = "/customers/delete/:id" method = "post"> <input type="submit" value="delete" /> </form>-->'
+                        },
+                        {
+                            editor: new Y.RadioCellEditor(
+                                    {
+                                        editable: true,
+                                        options: {
+                                            yes: 'Yes',
+                                            no: 'No',
+                                            maybe: 'Maybe'
+                                        }
+                                    }
+                            ),
+                            key: 'active'
+                        }
+
+
+                       /* {
+                            editor: new Y.CheckboxCellEditor(
+                                    {
+                                        editable: true,
+                                        multiple: true,
+                                        options: {
+                                            red: 'Red',
+                                            green: 'Green',
+                                            blue: 'Blue'
+                                        }
+                                    }
+                            ),
+                            key: 'colors'
+                        }*/
+                    ];
+
+
+                    Y.io.request(
+                            'http://localhost:4300/customers',
+                            {
+                                on: {
+                                    success: function () {
+                                        var data = this.get('responseData');
+                                        var parsed = JSON.parse(data);
+
+                                         console.log(parsed);
+                                       var table = new Y.DataTable(
+                                                {
+                                                    columnset: columns,
+                                                    recordset: parsed,
+                                                    scrollable: 'y',
+                                                    height: "500px",
+                                                    width:  "700px",
+                                                    autoSync: "true"
+                                                }
+                                        )
+
+                                               .render('#myDataTable,#scroll');
+                                        var recordID = myDataTable.getSelectRows()[0],
+                                                record = myDataTable.getRecord(recordID);
+                                        console.log(record.getData("myDataTable"));
+
+
+                                        removeRow: Y.function (parsed,config)
+                                        {
+                                            var modelList = this.data,
+                                            // Allow autoSync: true + addRow({ data }, { sync: false })
+                                                    sync      = (config && ('sync' in config)) ?
+                                                            config.sync :
+                                                            this.get('autoSync'),
+                                                    models, model, i, len, args;
+
+                                            // TODO: support removing via DOM element. This should be relayed to View
+                                            if (isObject(parsed) && parsed instanceof this.get('recordType')) {
+                                                model = parsed;
+                                            } else if (modelList && parsed !== undefined) {
+                                                model = modelList.getById(parsed) ||
+                                                        modelList.getByClientId(parsed) ||
+                                                        modelList.item(parsed);
+                                            }
+
+                                            if (model) {
+                                                args = toArray(arguments, 1, true);
+
+                                                models = modelList.remove.apply(modelList,
+                                                        [model].concat(args));
+
+                                                if (sync) {
+                                                    if (!isObject(args[0])) {
+                                                        args.unshift({});
+                                                    }
+
+                                                    args[0]['delete'] = true;
+
+                                                    models = toArray(models);
+
+                                                    for (i = 0, len = models.length; i < len; ++i) {
+                                                        model = models[i];
+                                                        model.destroy.apply(model, args);
+                                                    }
+                                                }
+                                            }
+
+                                            return this;
+                                        }
+
+
+                                        /*new Y.FormValidator(
+                                         {
+                                         boundingBox: '#myForm'
+                                         })
+                                         */
+
+                                    }
+                                }
+                            }
+                    )
+                }
+        );
+
+
+
+    </script>
+    <!--<script type="text/javascript">
+        dt.subscribe('checkboxClickEvent', function(oArgs) {
+            var elCheckbox = oArgs.target;
+            var newValue = elCheckbox.checked;
+            var record = this.getRecord(elCheckbox);
+            var column = this.getColumn(elCheckbox);
+            record.setData(column.key,newValue);
+
+            if (column.key == 'Select') {
+                var allChecked = true;
+                this.forAllRecords(function (r) {
+                    if (!r.getData('Select')) {
+                        allChecked = false;
+                        return false;
+                    }
+                });
+                Dom.get('SelectAll').checked = allChecked;
+            }
+        });
+        YAHOO.widget.DataTable.prototype.forAllRecords = function (fn,scope) {
+            if (!Lang.isFunction(fn)) {return;}
+            scope || (scope = this);
+            for (var rs = this.getRecordSet(), l = rs.getLength(), i = 0; i < l; i++) {
+                if (fn.call(scope, rs.getRecord(i), i) === false) return;
+            }
+        };
+        dt.on('theadCellClickEvent', function (oArgs) {
+            var target = oArgs.target,
+                    column = this.getColumn(target),
+                    actualTarget = Event.getTarget(oArgs.event),
+                    check = actualTarget.checked;
+
+            if (column.key == 'Select') {
+                this.forAllRecords(function (r) {
+                    r.setData('Select',check);
+                });
+                this.render();
+            }
+        });
+        Event.on('delete','click', function() {
+            dt.deleteRowsBy(function (data) {
+                return data.Select;
+            });
+        });
+        YAHOO.widget.DataTable.prototype.deleteRowsBy = function (condition) {
+            var start = 0, count = 0, current = 0,
+                    recs = this.getRecordSet().getRecords();
+
+            while (current < recs.length) {
+                if (recs[current] && condition(recs[current].getData())) {
+                    if (count === 0) {
+                        start = current;
+                        //console.log('got one to delete at ' + start);
+                    } else {
+                        //console.log('got 1 more to delete');
+                    }
+                    count++;
+                    current++;
+                } else {
+                    if (count) {
+                        this.deleteRows(start,count);
+                        count = 0;
+                        current = start;
+                    } else {
+                        current++;
+                    }
+                }
+            }
+            if (count) {
+                this.deleteRows(start,count);
+            }
+        };-->
+
+
+    <!-- <script>
+          $.ajax({
+              type: "POST",
+
+             url: 'http://localhost:4300/customers/delete',
+              data: data,
+              success: success,
+              dataType: dataType
+          });
+         //console.log("data");
+
+      </script>-->
+    <!-- <script type="text/javascript">
+         $(function(){
+             $('#select_link').click(function(e){
+                 e.preventDefault();
+                 console.log('select_link clicked');
+
+                 /*$.ajax({
+                  dataType: 'jsonp',
+                  data: "data=yeah",
+                  jsonp: 'callback',
+                  url: 'http://54.165.209.100:4300/customers',
+                  success: function(data) {
+                  console.log('success');
+                  console.log(JSON.stringify(data));
+                  }
+                  });*/
+                 var data = {};
+                 data.title = "title";
+                 data.message = "message";
+
+                 $.ajax({
+                     type: 'GET',
+                     data: JSON.stringify(data),
+                     contentType: 'application/json',
+                     url: 'http://localhost:4300/customers/add',
+                     success: function(data) {
+                         console.log('success');
+                         console.log(JSON.stringify(data));
+                     }
+                 });
+                 /*$.ajax('http://54.165.209.100:4300/customers', {
+                  type: 'GET',
+                  data: JSON.stringify(data),
+                  contentType: 'application/json',
+                  success: function() { console.log('success');},
+                  error  : function() { console.log('error');}
+                  });*/
+             });
+         });
+     </script>
+ -->
+</head>
+<body>
+<div class="container">
+    <h2>Panels</h2>
+    <div class="panel-group">
+        <div class="panel panel-default">
+            <div class="panel-heading">Alloy UI Datatable</div>
+            <div class="panel-body" style="max-height: 660; overflow-y: scroll;">
+                <div class="page-data">
+                    <div class="data-btn">
+                        <button onClick="addUser();">+ Add</button>
+                    </div>
+                    <div id="myDataTable"></div>
+
+
+                    <!-- <form id="myForm" method="post" action="/customers/add">
+                         <p>
+                             <label class="aui-field-label" for="name">Name:</label>
+                             <input class="aui-field-required" type="text" name="name" />
+                         </p>
+                         <p>
+                             <label class="aui-field-label" for="address">address:</label>
+                             <input class="aui-field-required" type="text" name="address" />
+                         </p>
+                         <p>
+                             <label class="aui-field-label" for="email">Email:</label>
+                             <input class="aui-field-required aui-field-email" type="text" name="email" />
+                         </p>
+                         <p>
+                             <label class="aui-field-label" for="phone">PhoneNo:</label>
+                             <input class="aui-field-required aui-field-digits" type="text" name="phone" />
+                         </p>
+                         <p>
+                             <input class="aui-button-input" type="submit" value="Submit" />
+                             <input class="aui-button-input" type="reset" value="Reset" />
+                         </p>
+                     </form>
+     -->
+                </div>
+
+
+            </div>
+        </div>
+
+</body>
+</html>

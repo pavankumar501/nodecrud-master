@@ -1,0 +1,54 @@
+<html>
+<head>
+    <title>Alloy</title>
+    <script src="js/aui-min.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet"></link>
+    <script>
+  YUI().use(
+  'aui-carousel',
+  'aui-datepicker',
+  function(Y) {
+    new Y.Carousel(
+      {
+        contentBox: '#myCarousel',
+		trigger: 'button',
+        height: 650,
+        width: 700
+      }
+    ).render();
+  }
+);
+
+    </script>
+	<script>
+	YUI().use(
+  'aui-datepicker',
+  function(X) {
+    new X.DatePicker(
+      {
+        trigger: 'button',
+        popover: {
+          zIndex: 1
+        },
+        on: {
+          selectionChange: function(event) {
+            console.log(event.newSelection)
+          }
+        }
+      }
+    );
+  }
+);
+</script>
+</head>
+<body>
+<div id="myCarousel">
+  <div class="image-viewer-base-image" style="background: url(http://alloyui.com/carousel/img/1.jpg);"></div>
+  <div class="image-viewer-base-image" style="background: url(http://alloyui.com/carousel/img/2.jpg);"></div>
+  <div class="image-viewer-base-image" style="background: url(http://alloyui.com/carousel/img/3.jpg);"></div>
+  <div class="image-viewer-base-image" style="background: url(http://alloyui.com/carousel/img/4.jpg);"></div>
+</div>
+<br><br><br>
+<button class="btn btn-primary"><i class="icon-calendar icon-white"></i> Select the date</button>
+</body>
+</html>

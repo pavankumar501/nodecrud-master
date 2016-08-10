@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AlloyUI - Data Table</title>
+
+    <!--
+    1 - Copy and paste
+    First load the seed and CSS files.
+    -->
+    <script src="http://cdn.alloyui.com/2.0.0/aui/aui-min.js"></script>
+    <link href="http://cdn.alloyui.com/2.0.0/aui-css/css/bootstrap.min.css" rel="stylesheet"></link>
+</head>
+<body class="yui3-skin-sam">
+
+<h1>AlloyUI - Data Table</h1>
+
+<div id="myDataTable"></div>
+<div id="dataToolbar"></div>
+<div id="modal"></div>
+
+<!--
+2 - Start using AlloyUI
+Then initialize AlloyUI and load a module, e.g., node.
+-->
+<script>
+    YUI().use(
+            'aui-button',
+            'aui-datatable',
+            'aui-modal',
+            'aui-popover',
+            'aui-tooltip',
+            function(Y) {
+
+                // Initialize Text Area Cell Editors
+
+                var addressEditor = new Y.TextAreaCellEditor();
+                var cityEditor = new Y.TextAreaCellEditor();
+                var nameEditor = new Y.TextAreaCellEditor();
+                var stateEditor = new Y.TextAreaCellEditor();
+
+                // Populate columns objects with Editors
+
+                var columns = [
+                    {key:'name', editor: nameEditor},
+                    {key:'address', editor: addressEditor},
+                    {key:'city', editor: cityEditor},
+                    {key:'state', editor: stateEditor}
+                ];
+
+                // Create some dummy data
+
+                var data = [
+                    {address: '1236 Some Street', city: 'San Francisco', name: 'John A. Smith', state: 'CA'},
+                    {address: '3271 Another Ave', city: 'New York', name: 'Joan B. Jones', state: 'NY'},
+                    {address: '9996 Random Road', city: 'Los Angeles', name: 'Bob C. Uncle', state: 'CA'},
+                    {address: '1623 Some Street', city: 'San Francisco', name: 'John D. Smith', state: 'CA'},
+                    {address: '9899 Random Road', city: 'Los Angeles', name: 'Bob F. Uncle', state: 'CA'}
+                ];
+
+                // Initialize the Data Table
+
+               var table = new Y.DataTable(
+                        {
+                            columns: columns,
+                            data: data,
+                            editEvent: 'dblclick'
+                        }
+                ).render('#myDataTable');
+
+
+                //Add title attributes to cells
+
+                var makeTitles = function() {
+                    Y.all('.table-cell').each(
+                            function() {
+                                var cssClass = this.get('className');
+                                cssClass = cssClass.split(" ");
+                                cssClass = cssClass[0].substring(10);
+                                this.set('title', cssClass);
+                            }
+                    );
+                };
+
+                makeTitles();
+
+                // Create Modal Node
+
+                var optionModal;
+                var modalContent = Y.Node.create(
+                        '<div id="modalContent">' +
+                        '<form>Details: ' +
+                        '<select name="details" id="details">' +
+                        '<option value="popover">Popover</option>' +
+                        '<option value="dialog">Dialog</option>' +
+                        '<option value="tooltip">Tooltip</option>' +
+                        '</select>' +
+                        '<br>Odd Row Color:<br>' +
+                        '<input class="colorOption" type="radio" name="oddColor" value="transparent" checked="true">None  ' +
+                        '<input class="colorOption" type="radio" name="oddColor" value="blue">Blue  ' +
+                        '<input class="colorOption" type="radio" name="oddColor" value="red">Red  ' +
+                        '</form>' +
+                        '</div>'
+                );
+
+                // Open options Modal
+
+                var openOptions = function() {
+                    if (!optionModal) {
+                        optionModal = new Y.Modal(
+                                {
+                                    bodyContent: modalContent,
+                                    centered: true,
+                                    headerContent: '<h4>Table Options<h4>',
+                                    render: '#modal',
+                                    resizable: false
+                                }
+                        ).render();
+
+                        optionModal.addToolbar(
+                                [
+                                    {
+                                        label: 'Cancel',
+                                        on: {
+                                            click: function() {
+                                                optionModal.hide();
+                                            }
+                                        }
+                                    },
+                                    {
+                                        label: 'Okay',
+                                        on: {
+                                            click: function() {
+                                                var options = {
+                                                    details: getChosenDetails(),
+                                                    oddColor: getChosenColor()
+                                                };
+
+                                                commitOptions(options);
+
+                                                optionModal.hide();
+                                            }
+                                        }
+                                    }
+                                ]
+                        );
+                    }
+                    else {
+                        optionModal.show();
+                    }
+                };
+
+                // Create options button
+
+                new Y.Button(
+                        {
+                            boundingBox: '#dataToolbar',
+                            icon: 'icon-cog',
+                            on: {
+                                click: openOptions
+                            }
+                        }
+                ).render();
+
+                // Apply options to Data Table
+
+                var commitOptions = function(options) {
+                    disableTooltip();
+                    disablePopover();
+                    disableToolDialog();
+                    makeTitles();
+
+                    if (options.details == 'popover') {
+                        enablePopover();
+                    }
+                    else if (options.details == 'dialog') {
+                        enableToolDialog();
+                    }
+                    else {
+                        enableTooltip();
+                    }
+
+                    colorTable(options.oddColor);
+                }
+
+                // Get selected color
+
+                var getChosenColor = function() {
+                    return Y.one('.colorOption:checked').val();
+                };
+
+                // Get selected details
+
+                var getChosenDetails = function() {
+                    return Y.one('#details').val();
+                };
+
+                // Apply color to odd table rows
+
+                var colorTable = function(color) {
+                    Y.all('.table-odd').setStyle('backgroundColor', color);
+                };
+
+                // Create Popovers
+
+                var popover;
+                var popDelegate;
+
+                var enablePopover = function() {
+                    popDelegate = Y.one('#myDataTable').delegate(
+                            'hover',
+                            function(event) {
+                                if (popover) {
+                                    popover.destroy();
+                                }
+                                popover = new Y.Popover(
+                                        {
+                                            align: {
+                                                node: event.target
+                                            },
+                                            bodyContent: event.target.get('title'),
+                                            position: 'right'
+                                        }
+                                ).render();
+                            },
+                            '.table-cell'
+                    );
+                };
+
+                enablePopover();
+
+                // Disable Popovers
+
+                var disablePopover = function() {
+                    if (popDelegate) {
+                        popDelegate.detach();
+                    }
+
+                    if (popover) {
+                        popover.destroy();
+                    }
+                }
+
+                // Create Modals
+
+                var toolDialog;
+                var toolDialogDelegate;
+
+                var enableToolDialog = function() {
+                    toolDialogDelegate = Y.one('#myDataTable').delegate(
+                            'hover',
+                            function(event) {
+                                if (toolDialog) {
+                                    toolDialog.destroy();
+                                }
+
+                                toolDialog = new Y.Modal(
+                                        {
+                                            bodyContent: event.target.get('title'),
+                                            centered: true,
+                                            render: event.target,
+                                            width: 110
+                                        }
+                                ).render();
+                            },
+                            '.table-cell'
+                    );
+                };
+
+                // Disable Modals
+
+                var disableToolDialog = function() {
+                    if (toolDialogDelegate) {
+                        toolDialogDelegate.detach();
+                        toolDialog.destroy();
+                    }
+                };
+
+                // Create Tooltips
+
+                var tooltip;
+                var enableTooltip = function() {
+                    if (tooltip) {
+                        tooltip.destroy();
+                    }
+
+                    tooltip = new Y.TooltipDelegate(
+                            {
+                                trigger: '.table-cell'
+                            }
+                    );
+                };
+
+                // Disable Tooltips
+
+                var disableTooltip = function() {
+                    if (tooltip) {
+                        tooltip.destroy();
+                    }
+                };
+            }
+    );
+</script>
+
+</body>
+</html>

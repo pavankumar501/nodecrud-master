@@ -1,0 +1,44 @@
+<html>
+<head>
+    <title>Alloy</title>
+    <script src="js/aui-min.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet"></link>
+    <script>
+        YUI().use(
+                'aui-node',
+                'aui-datatable',
+                function(Y) {
+                    var dataTable = Y.one('#data-table'),
+                    tableHeaders = dataTable('thead').one('tr').all('th');
+                    columns = [],
+                    i = 0;
+            tableHeaders.each(function(node) {
+                columns[i++] = node.get('customers');
+            });
+
+            var tableRows = dataTable('tbody').all('tr'),
+                    data = [],
+                    i = 0;
+            tableRows.each(function(node) {
+                var row = node.all('td'),
+                        rowData = {},
+                        j = 0;
+                row.each(function(node) {
+                    rowData[columns[j++]] = node.get('innerHTML');
+                });
+                data[i++] = rowData;
+            });
+
+            dataTable.remove(true);
+            new Y.DataTable.Base({
+                boundingBox: '.data-table',
+                columnset: columns,
+                recordset: data,
+                render: true
+            });
+        });
+    </script>
+</head>
+<body>
+<div id="myDataTable"></div></body>
+</html>

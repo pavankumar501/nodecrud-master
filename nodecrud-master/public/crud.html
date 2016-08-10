@@ -1,0 +1,85 @@
+<html>
+<head>
+    <title>Alloy</title>
+    <script src="/public/js/aui-min.js"></script>
+    <link href="/public/css/bootstrap.min.css" rel="stylesheet"></link>
+    <script>
+        YUI().use(
+                'aui-io-request',
+                'aui-datatable',
+                'aui-datatype',
+                'datatable-sort',
+
+                function (Y) {
+
+                    Y.io.request(
+                            'http://54.165.209.100:4300/customers',
+                            {
+                                on: {
+                                    success: function () {
+                                        var data = this.get('responseData');
+                                        var parsed = JSON.parse(data);
+                                        //console.log(data.data[0].id);
+
+                                        var nameEditor = new Y.TextAreaCellEditor(
+                                                {
+                                                    validator: {
+                                                        rules: {
+                                                            name: {
+                                                                email: true,
+                                                                required: true
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                        );
+
+                                        var nestedCols = [
+                                            {
+                                                editor: nameEditor,
+                                                key: 'name',
+                                                sortable: true
+                                            },
+                                            {
+                                                editor: new Y.TextAreaCellEditor(),
+                                                key: 'address',
+                                                sortable: true
+                                            },
+                                            {
+                                                editor: new Y.TextAreaCellEditor(),
+                                                key: 'email'
+                                            },
+                                            {
+                                                editor: new Y.TextAreaCellEditor(),
+                                                key: 'phone'
+                                            }
+                                        ];
+                                        var dataTable = new Y.DataTable.Base(
+                                                {
+                                                    columns: nestedCols,
+                                                    recordset: parsed,
+                                                    data: data,
+                                                    editEvent: 'dbclick',
+                                                    plugins: [
+                                                        {
+                                                            cfg: {
+                                                                highlightRange: false
+                                                            },
+                                                            fn: Y.Plugin.DataTableHighlight
+                                                        }
+                                                    ]
+                                                }
+                                        ).render('#myDataTable');
+                                        dataTable.get('customer').unselectable();
+                                    }
+                                }
+                                }
+                                        );
+                                    }
+                    );
+
+    </script>
+</head>
+<body>
+<div id="myDataTable"></div></body>
+</html>

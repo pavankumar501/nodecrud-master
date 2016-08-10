@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <!--
+        Example of YUI 3.3.0 DataTable with Row Selection, Copy, Add, and Delete
+        Copyright 2011 Adrian Lanning
+        License: MIT, GPL
+     -->
+
+    <title>YUI3.3 DataTable Example</title>
+
+    <link type="text/css" href="http://yui.yahooapis.com/3.3.0/build/cssfonts/reset-min.css" />
+    <link type="text/css" href="http://yui.yahooapis.com/3.3.0/build/cssfonts/fonts-min.css" />
+
+    <style>
+
+        #menu {
+            list-style: none;
+            margin-left:0;
+            padding:0;
+        }
+        #menu li {
+            display:inline;
+            margin-right: 0.5em;
+        }
+        #menu a {
+            padding:5px;
+            margin:2em auto;
+            border: 2px solid #ccc;
+            -moz-border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        #menu a:hover {
+            background-color:#dde;
+        }
+
+    </style>
+
+    <!--<script type="text/javascript" src="http://yui.yahooapis.com/3.3.0/build/yui/yui-min.js"></script>-->
+    <script src="js/aui-min.js"></script>
+    <script src="js/all.js"></script>
+</head>
+
+<body class="yui3-skin-sam">
+
+<ul id="menu">
+    <li><a href="javascript:window.app.showSelectedItem()">Show Selected Item</a></li>
+    <li><a href="javascript:window.inspectObj(window.app.getData())">Show Local Data</a></li>
+    <li><a href="javascript:window.app.add()">Add Item</a></li>
+    <li><a href="javascript:window.app.copy()">Copy Selected</a></li>
+    <li><a href="javascript:window.app.delete()">Delete Selected</a></li>
+</ul>
+
+<div id="content">
+    <div id="datatable"></div>
+</div>
+
+
+
+
+<script type="text/javascript">
+    // GERNERAL PURPOSE JAVASCRIPT HELPERS
+
+    var UNDEFINED = "undefined",
+            OBJECT = "object",
+            NUMBER = "number";
+
+    if (!Object.extend) {
+        // Object extension method from Prototype-1.6.0.2.js
+
+        /**
+         * Applies the supplier's properties to the receiver.
+         * @param {object} r  the receiving object
+         * @param {object} s  the supplying object
+         * @param {boolean} ov  if true, existing properties on
+         * receiver will be overwritten if found on the supplier
+         * @return {object} the augmented object
+         */
+        Object.extend = function(r, s, ov) {
+            for (var p in s) {
+                if (ov || typeof r[p] === UNDEFINED) {
+                    r[p] = s[p];
+                }
+            }
+            return r;
+        };
+    }
+
+
+    function inspectObj (obj, msg) {
+        var output = "";
+        if (msg)
+            output = msg + "\n";
+        output += JSON.stringify(obj);
+        alert(output);
+    }
+
+    Object.extend(Array.prototype, {
+        findById : function (id) {
+
+            for (var i = 0, len = this.length; i < len; i++) {
+                var e = this[i];
+                if (e && e.id===id) {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+        , remove : function (index) {
+            this.splice(index,1);
+        }
+    });
+
+
+    YUI().use('console', 'event-custom', 'datatable', 'datatable-scroll','aui-io-request'
+            //, 'gallery-user-patch-2529808'
+            //, 'gallery-user-patch-datatable-rollup'
+            , function (Y) {
+
+                function App () {
+                    this.initialize();
+                }
+
+                Object.extend(App.prototype, {
+
+                    getData : function () {
+
+                        if (!this._data) {
+
+                            // generate some JSON data
+                                Y.io.request(
+                                        'http://localhost:4300/customers',
+                                        {
+                                            on: {
+                                                success: function() {
+                                                    var data = this.get('responseData');
+                                                    var d = JSON.parse(data);
+                                                    console.log(d);
+
+                                                }
+                                            }
+                                        }
+                                );
+                            this._data = [];
+                            for (var i = 0, len = d.length; i < len; i++) {
+                                var obj = {};
+                                obj.id = d[i][0];
+                                obj.name = d[i][1];
+                                obj.address = d[i][2];
+                                obj.email = d[i][3];
+                                obj.phone = d[i][4];
+                                this._data.push(obj);
+                                console.log("obj");
+                            }
+                        }
+                        return this._data;
+                    }
+
+                    , initialize : function () {
+
+                        console.log('App initializing...');
+
+                        this.getData();
+
+                        var columns = [
+                            { key: "id", sortable: true  },
+                            { key: "name", sortable: true  },
+                            { key: "address", sortable: true  },
+                            { key: "email", sortable: true },
+                            { key: "phone", sortable: true }
+                        ];
+
+                        var dt = new Y.DataTable.Base({
+                            columnset: columns,
+                            recordset: this.getData()
+                            //, plugins: [ Y.Plugin.DataTableSort ]
+                        });
+
+                        //dt.plug(Y.Plugin.DataTableScroll, {
+                        //    height: "5em"
+                        //});
+
+                        dt.render('#datatable');
+
+
+                        dt.delegate( ['mouseenter','mouseleave'], Y.bind(this.highlightRow, this), '.yui3-datatable-data tr');
+                        dt.delegate('click', Y.bind(this.selectRow, this), '.yui3-datatable-data tr');
+
+                        this.dt = dt;
+                    }
+
+                    , add : function () {
+
+                        var index = this.selectedRecordIndex();
+
+                        var len = this.getData().length;
+
+                        var obj = {
+                            id:len,
+                            name:"First" + len,
+                            address: "Last" + len,
+                            email: 25,
+                            phone: "engineering"
+                        };
+
+                        this.getData().push(obj);
+
+                        var newSet = new Y.Recordset({records: this.getData()});
+                        this.dt.set('recordset', newSet);
+
+                        this.selectRow(index);
+                    }
+
+                    , copy : function () {
+                        var item = this.selectedItem();
+                        if (!item) {return;}
+
+                        var index = this.selectedRecordIndex();
+
+                        var clone = Y.clone(item);
+                        clone.id = this.getData().length;
+                        this.getData().push(clone);
+
+                        var newSet = new Y.Recordset({records: this.getData()});
+                        this.dt.set('recordset', newSet);
+
+                        this.selectRow(index);
+                    }
+
+                    , 'delete' : function () {
+                        var recordId = this.selectedRecordId();
+                        if (!recordId) {return;}
+
+                        var set = this.dt.get('recordset');
+                        var record = set.getRecord(recordId);
+
+                        var data = record.get('data');
+                        var id = data.id;
+
+                        var newData = this.getData();
+                        if (!newData) {return;}
+
+                        // remove from underlying datastore
+                        var idx = newData.findById(id);
+                        if (idx==-1) {alert(String.Format("Id '{0}' not found", id));}
+                        newData.remove(idx);
+
+
+                        // Resync datatable
+                        //   Two ways to do it:
+                        //   1) remove from recordset, syncUI
+                        //   2) create new recordset, set recordset property on datatable
+
+                        //set.remove(id);
+                        //this.dt.syncUI();
+
+                        var newSet = new Y.Recordset({records: this.getData()});
+                        this.dt.set('recordset', newSet);
+                    }
+
+                    , highlightRow : function(e) {
+                        var tr = e.currentTarget;
+                        tr.all('td').toggleClass('yui3-datatable-highlighted');
+                    }
+
+                    , selectedRecordId : function () {
+                        var tr = this.selectedRow();
+                        if (!tr) { return; }
+
+                        var id = tr.get('id');
+                        return id;
+                    }
+
+                    , selectedRecordIndex : function () {
+                        var set = this.dt.get('recordset');
+                        var recordId = this.selectedRecordId();
+                        if (!recordId) {return -1;}
+
+                        var record = set.getRecord(recordId);
+
+                        var recordsArray = set.get('records');
+                        var index = recordsArray.indexOf(record);
+
+                        return index;
+                    }
+
+                    , selectedRow : function () {
+                        var contentBox = this.dt.get('contentBox');
+                        var td = contentBox.one('td.yui3-datatable-selected')
+                        if (!td) { return; }
+
+                        var tr = td.ancestor();
+                        return tr;
+                    }
+                    , selectedItem : function () {
+                        var id = this.selectedRecordId();
+                        if (!id) {return;}
+
+                        var set = this.dt.get('recordset');
+                        var record = set.getRecord(id);
+                        var data = record.get('data');
+                        return data;
+                    }
+
+                    , showSelectedItem : function () {
+                        var item = this.selectedItem();
+                        if (item) {
+                            window.inspectObj(item, "Selected Item:");
+                        }
+                    }
+                    , selectRow : function(o) {
+                        this.unselectRows();
+
+                        if (typeof o == OBJECT) {
+                            var tr = o.currentTarget;
+                            tr.all('td').addClass('yui3-datatable-selected');
+                            console.log("Row selected");
+
+                            // do something with the row data
+                            var id = tr.get("id");
+                            var records = this.dt.get("recordset");
+                            var selectedRecord = records.getRecord( id );
+
+                            //this.onRowSelected(selectedRecord);
+                        } else if (typeof o == NUMBER && o != -1) {
+                            // index of row to select
+                            var c = this.dt.get('contentBox');
+                            // datatable has _two_ tbody tags...
+                            var tbody = c.one('tbody').next();
+                            var trs = tbody.all('tr');
+                            var nodes = trs.get('nodes');
+                            var tr = nodes[o];
+
+                            if (!tr) {return;}
+
+                            tr.all('td').addClass('yui3-datatable-selected');
+                            console.log("Row selected");
+                        }
+                    }
+
+                    , unselectRows : function () {
+                        console.log("Unselecting all rows");
+
+                        var c = this.dt.get('contentBox');
+                        c.all('td.yui3-datatable-selected').removeClass('yui3-datatable-selected');
+                    }
+
+                });
+
+
+
+                window.app = new App();
+
+
+            });
+
+</script>
+
+</body>
+</html>
+
